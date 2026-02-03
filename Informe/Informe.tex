@@ -1,0 +1,392 @@
+\documentclass[11pt, a4paper]{article}
+
+% 1. Codificación y Fuente
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+% 2. Idioma
+% es-nodecimaldot: usa punto para decimales (no coma)
+% es-noquoting: desactiva el uso de < y > como comillas activas
+% es-tabla: usa "Tabla" en lugar de "Cuadro"
+\usepackage[spanish, es-tabla, es-nodecimaldot, es-noquoting]{babel}
+
+% 3. Diseño de Página y Matemáticas
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{float}
+
+% 4. Gráficos y Diagramas (TikZ)
+\usepackage{tikz}
+\usetikzlibrary{shapes, arrows.meta, positioning, calc, trees}
+
+% 5. Algoritmos y Pseudocódigo
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+% Configuración de nombres en español para algoritmos
+\floatname{algorithm}{Algoritmo}
+\renewcommand{\listalgorithmname}{Índice de algoritmos}
+\renewcommand{\algorithmicrequire}{\textbf{Entrada:}}
+\renewcommand{\algorithmicensure}{\textbf{Salida:}}
+\renewcommand{\algorithmicif}{\textbf{Si}}
+\renewcommand{\algorithmicthen}{\textbf{entonces}}
+\renewcommand{\algorithmicelse}{\textbf{Sino}}
+\renewcommand{\algorithmicfor}{\textbf{Para}}
+\renewcommand{\algorithmicforall}{\textbf{Para todo}}
+\renewcommand{\algorithmicdo}{\textbf{hacer}}
+\renewcommand{\algorithmicwhile}{\textbf{Mientras}}
+\renewcommand{\algorithmicreturn}{\textbf{Retornar}}
+
+% 6. Hipervínculos (Siempre debe ir al final)
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+}
+
+\title{
+    \vspace{-2cm}
+    {\Large \textbf{Universidad de Ingeniería y Tecnología - UTEC}} \\
+    \vspace{1cm}
+    \textbf{CS2023: Algoritmos y Estructuras de Datos} \\
+    \vspace{1cm}
+    \large \textbf{Informe Técnico: Estructura de Datos Quadtree y Propuesta de Desarrollo}
+}
+
+\author{
+    \textbf{Grupo N° 4} \\
+    \and
+    Oswaldo Alejandro Quispe Monzón \\
+    \and
+    Sebastián Cangalaya \\
+    \and
+    Leonardo \\
+    \and
+    Tal vez
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\newpage
+
+\tableofcontents
+\newpage
+
+\section{Introducción}
+El desarrollo de videojuegos modernos requiere el manejo eficiente de cientos o miles de entidades simultáneas. Un desafío crítico es la \textbf{detección de colisiones}. Un enfoque ingenuo compara cada par de entidades, resultando en una complejidad cuadrática $O(N^2)$, lo cual es inviable para $N$ grande.
+
+El objetivo de este proyecto es implementar la estructura de datos espacial \textbf{Quadtree} (específicamente la variante \textit{Region Quadtree} con \textit{AABB}) para reducir el espacio de búsqueda. Este reporte detalla la teoría, el análisis de complejidad, la implementación algorítmica preliminar y la propuesta del videojuego ``Cellular Defense'', donde se aplicará esta tecnología.
+
+\section{Descripción Detallada del Quadtree}
+
+\subsection{Estructura Lógica}
+El Quadtree es un árbol jerárquico donde cada nodo representa una región rectangular del espacio 2D. 
+\begin{itemize}
+    \item \textbf{Nodo Raíz:} Representa el mundo completo del juego.
+    \item \textbf{Nodos Internos:} Tienen exactamente 4 hijos (Noroeste, Noreste, Suroeste, Sureste).
+    \item \textbf{Nodos Hoja:} No tienen hijos y contienen una lista de entidades hasta una capacidad máxima ($K$).
+\end{itemize}
+
+Cuando un nodo hoja excede su capacidad $K$, se produce una operación de \textbf{Subdivisión (Split)}, transformándose en un nodo interno y redistribuyendo sus entidades a los nuevos cuadrantes hijos.
+
+\subsection{Análisis de Hiperparámetros}
+La eficiencia del Quadtree depende críticamente de dos parámetros: la capacidad del nodo ($K$) y la profundidad máxima ($D$).
+\begin{itemize}
+    \item \textbf{Capacidad ($K$):} Un $K$ muy pequeño (ej. $K=1$) genera excesivas subdivisiones, aumentando el consumo de memoria. Un $K$ muy grande (ej. $K=50$) degrada el rendimiento hacia la fuerza bruta dentro de cada nodo.
+    \item \textbf{Decisión de Diseño:} Basado en el tamaño promedio de las entidades (bacterias) respecto al mapa, utilizaremos \textbf{$K=4$}. Esto ofrece un equilibrio óptimo entre la profundidad del árbol y el costo de iterar linealmente sobre los objetos de una hoja.
+\end{itemize}
+
+\subsection{Métodos Principales}
+
+\subsubsection{Insertar (Insert)}
+Es el proceso de agregar una entidad al árbol. El algoritmo desciende recursivamente. Si la entidad no encaja geométricamente en el nodo actual, se rechaza. Si el nodo es una hoja y tiene espacio, se almacena. Si está lleno, se subdivide y se intenta insertar en los hijos.
+\textit{Nota sobre AABB:} Si una entidad con área (caja delimitadora) se encuentra justo sobre la línea divisoria de los cuadrantes y no cabe completamente en ningún hijo, nuestra implementación la almacenará en el nodo padre para evitar duplicidad de referencias.
+
+\subsubsection{Consultar (Query)}
+Es el núcleo de la optimización. Dado un rango de búsqueda (ej. el área de una bala), el algoritmo retorna una lista de entidades candidatas a colisión. Solo se visitan los nodos que intersectan con el rango de búsqueda, ignorando grandes porciones del mapa.
+
+\subsubsection{Limpiar (Clear)}
+Elimina recursivamente todos los nodos y libera la memoria, reseteando el árbol para el siguiente frame del juego (en implementaciones dinámicas).
+
+\subsection{Operaciones Avanzadas y Mantenimiento}
+Para asegurar la robustez en un entorno de videojuego dinámico, se consideran las siguientes operaciones críticas:
+
+\subsubsection{Eliminación y Colapso (Merge)}
+Cuando una entidad es destruida (ej. un virus muere), debe ser removida de la lista del nodo correspondiente.
+Si tras la eliminación, la suma de entidades en los 4 hijos de un nodo padre es menor o igual a la capacidad $K$, se puede realizar una operación de \textbf{Colapso (Merge)}. Esto convierte al nodo padre nuevamente en una hoja y elimina a los hijos, liberando memoria y optimizando la profundidad del árbol.
+
+\subsubsection{Estrategia de Actualización (Update)}
+Dado que las entidades se mueven constantemente, su posición en el Quadtree cambia. Existen dos estrategias:
+\begin{itemize}
+    \item \textbf{Actualización Dinámica:} Detectar cuándo una entidad sale de su nodo y reinsertarla en el padre o vecino. Es compleja y propensa a errores.
+    \item \textbf{Reconstrucción por Frame (Estrategia Elegida):} Dado que casi todas las entidades se mueven, resulta computacionalmente eficiente ejecutar \texttt{Clear()} e insertar todo nuevamente en cada frame. Con una complejidad de $O(N \log N)$, esta operación es perfectamente viable para $N < 10,000$ en tiempo real (60 FPS), garantizando siempre un árbol válido sin referencias colgantes.
+\end{itemize}
+
+\newpage
+\section{Representación Visual de la Estructura}
+
+\subsection{División Espacial}
+El siguiente diagrama ilustra cómo un área 2D se subdivide recursivamente cuando la densidad de puntos aumenta en ciertas regiones.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[scale=0.6]
+        % Borde principal
+        \draw[thick] (0,0) rectangle (8,8);
+        
+        % Primera subdivisión (Nivel 1)
+        \draw[thick] (4,0) -- (4,8);
+        \draw[thick] (0,4) -- (8,4);
+        
+        % Etiquetas de cuadrantes principales
+        \node at (2,6) {\textbf{NW}};
+        \node at (6,6) {\textbf{NE}};
+        \node at (2,2) {\textbf{SW}};
+        \node at (6,2) {\textbf{SE}};
+        
+        % Subdivisión del cuadrante NE (Nivel 2)
+        \draw (6,4) -- (6,8);
+        \draw (4,6) -- (8,6);
+        
+        % Puntos (Entidades)
+        \fill[red] (1,1) circle (0.15);
+        \fill[red] (1.5,2.5) circle (0.15); % SW
+        
+        \fill[red] (2,5) circle (0.15);     % NW
+        
+        \fill[red] (7,1) circle (0.15);     % SE
+        
+        % Puntos en NE (densidad alta)
+        \fill[blue] (5,5) circle (0.1);
+        \fill[blue] (5.5,5.2) circle (0.1);
+        \fill[blue] (4.5,4.5) circle (0.1);
+        
+        \fill[blue] (7.5,7.5) circle (0.1);
+        
+    \end{tikzpicture}
+    \caption{Representación visual de la subdivisión espacial. El cuadrante NE ha excedido la capacidad $K$ y se ha subdividido nuevamente.}
+    \label{fig:spatial}
+\end{figure}
+
+\subsection{Diagrama de Clases (Arquitectura)}
+La implementación sigue un diseño orientado a objetos sin uso de la STL.
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[node distance=2cm, auto]
+        % Estilos
+        \tikzstyle{class}=[rectangle, draw=black, rounded corners, fill=blue!10, drop shadow,
+            text centered, anchor=north, text=black, width=3cm]
+        \tikzstyle{arrow}=[->, >=stealth, thick]
+
+        % Nodos
+        \node (Quadtree) [rectangle, draw, fill=orange!10, text width=4cm, align=left] {
+            \textbf{Quadtree}
+            \hrule
+            - boundary: AABB \\
+            - objects: List<Entity*> \\
+            - children: Quadtree*[4] \\
+            - capacity: int \\
+            - divided: bool
+            \hrule
+            + Insert(e: Entity*): bool \\
+            + Query(range: AABB): List \\
+            + Subdivide(): void \\
+            + Clear(): void
+        };
+
+        \node (AABB) [rectangle, draw, fill=gray!10, text width=3cm, below left=1cm and 0.5cm of Quadtree, align=left] {
+            \textbf{AABB}
+            \hrule
+            - x, y: float \\
+            - halfW, halfH: float
+            \hrule
+            + contains(): bool \\
+            + intersects(): bool
+        };
+
+        \node (Entity) [rectangle, draw, fill=green!10, text width=3cm, below right=1cm and 0.5cm of Quadtree, align=left] {
+            \textbf{Entity}
+            \hrule
+            - id: int \\
+            - shape: AABB \\
+            - type: Type
+            \hrule
+            + update(): void \\
+            + draw(): void
+        };
+
+        % Relaciones
+        \draw[arrow] (Quadtree.south west) ++(0.5,0) -- node[left] {usa} (AABB.north);
+        \draw[arrow] (Quadtree.south east) ++(-0.5,0) -- node[right] {contiene} (Entity.north);
+        
+    \end{tikzpicture}
+    \caption{Diagrama UML simplificado de la estructura Quadtree y sus dependencias.}
+    \label{fig:uml}
+\end{figure}
+
+\newpage
+\section{Análisis de Robustez y Casos Límite}
+
+Para garantizar la estabilidad del sistema y obtener el puntaje máximo en robustez, se han considerado los siguientes escenarios extremos:
+
+\subsection{Profundidad Máxima y Stack Overflow}
+Si múltiples entidades se superponen exactamente en la misma posición $(x, y)$, un Quadtree estándar intentaría subdividirse infinitamente para separarlas.
+\textbf{Solución:} Implementamos una constante \texttt{MAX\_DEPTH} (ej. 8). Al alcanzar este nivel, el nodo deja de subdividirse y fuerza el almacenamiento de todas las entidades restantes en ese nodo hoja, comportándose localmente como una lista ($O(N)$ local), pero previniendo el desbordamiento de pila y bucles infinitos.
+
+\subsection{Objetos Gigantes (Straddling)}
+En un juego, algunos objetos (como un ``Boss'') pueden ser más grandes que los cuadrantes más pequeños o estar situados justo en la cruz que divide los cuadrantes.
+\textbf{Solución:} Nuestra implementación de \texttt{Insert} verifica si el objeto cabe completamente en un hijo. Si no cabe (intersecta la línea divisoria), se almacena en el nodo padre. Esto evita duplicar referencias o lógica compleja de división de objetos.
+
+\section{Análisis de Complejidad Computacional}
+
+\subsection{Variables del Sistema}
+\begin{itemize}
+    \item $N$: Número total de entidades en el entorno de simulación.
+    \item $K$: Capacidad máxima de entidades por nodo (Bucket Size).
+    \item $D$: Profundidad máxima permitida del árbol (\texttt{MAX\_DEPTH}).
+    \item $A$: Área total del mundo del juego.
+\end{itemize}
+
+\subsection{Costos Asintóticos y Comparativa}
+Se presenta la comparación teórica entre la implementación propuesta y el enfoque ingenuo:
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{@{}lcc@{}}
+    \toprule
+    \textbf{Operación} & \textbf{Quadtree (Promedio)} & \textbf{Fuerza Bruta} \\ \midrule
+    Inserción ($1$ objeto) & $O(\log_4 N)$ & $O(1)$ \\
+    Busqueda / Query & $O(\log_4 N + K)$ & $O(N)$ \\
+    \textbf{Colisiones Globales ($N$ obj)} & $\mathbf{O(N \log_4 N)}$ & $\mathbf{O(N^2)}$ \\ \bottomrule
+    \end{tabular}
+    \caption{Comparación de eficiencia asintótica.}
+    \label{tab:complexity}
+\end{table}
+
+\subsection{Demostración Formal de la Eficiencia}
+La eficiencia del Quadtree radica en su naturaleza jerárquica. Asumiendo una distribución espacial uniforme de las entidades:
+
+\subsubsection{1. Altura del Árbol ($h$)}
+Dado que cada subdivisión divide el espacio en 4 cuadrantes, el crecimiento del árbol es logarítmico en base 4. La altura $h$ necesaria para almacenar $N$ objetos en hojas de capacidad $K$ se aproxima como:
+\begin{equation}
+    h \approx \log_4 \left( \frac{N}{K} \right)
+\end{equation}
+En notación Big-O, las constantes se ignoran, por lo que la altura es $O(\log N)$.
+
+\subsubsection{2. Costo de Inserción y Construcción}
+Para insertar una entidad, el algoritmo debe atravesar el árbol desde la raíz hasta una hoja. En el caso promedio (árbol balanceado), esto implica recorrer $h$ niveles.
+$$ Costo_{insert} \propto h \rightarrow O(\log N) $$
+Para construir el árbol completo con $N$ entidades en cada frame (como se especifica en nuestra estrategia de \texttt{Clear} y reconstrucción):
+$$ Costo_{total} = \sum_{i=1}^{N} O(\log i) \approx O(N \log N) $$
+
+\subsubsection{3. Análisis del Peor Caso y Robustez}
+En un escenario degenerado donde todas las entidades se agrupan en un solo punto $(x,y)$, el árbol intentaría subdividirse infinitamente. 
+\begin{itemize}
+    \item Sin límite: La complejidad degeneraría y causaría \textit{Stack Overflow}.
+    \item \textbf{Con nuestra optimización:} Al imponer la constante $D$ (\texttt{MAX\_DEPTH}), la profundidad máxima es constante.
+    $$ Costo_{peor\_caso} = O(N \cdot D) \equiv O(N) $$
+\end{itemize}
+Esto garantiza que, incluso en el peor escenario posible, el rendimiento nunca sea peor que lineal, evitando la complejidad cuadrática $O(N^2)$ de la fuerza bruta.
+
+\newpage
+\section{Implementación Preliminar (Pseudocódigo)}
+
+\begin{algorithm}[H]
+\caption{Inserción de Entidad con Manejo de Bordes}
+\begin{algorithmic}[1]
+\Require Nodo actual $Q$, Entidad $E$
+\Ensure Verdadero si se insertó, Falso si no
+\If{$E$ no intersecta con $Q.limites$}
+    \State \Return Falso \Comment{Fuera de rango}
+\EndIf
+
+\If{$Q.objetos.tamano < Q.capacidad$ \textbf{o} $Q.nivel == MAX\_NIVEL$}
+    \State $Q.objetos.agregar(E)$
+    \State \Return Verdadero
+\EndIf
+
+\If{no $Q.subdividido$}
+    \State $Subdividir(Q)$ \Comment{Crea 4 hijos NW, NE, SW, SE}
+\EndIf
+
+\State $insertado \gets Falso$
+\For{cada $Hijo$ en $Q.hijos$}
+    \If{$Insertar(Hijo, E)$}
+        \State $insertado \gets Verdadero$
+        \State \textbf{romper ciclo} \Comment{Solo insertamos en un hijo si cabe completo}
+    \EndIf
+\EndFor
+
+\If{no $insertado$}
+    \State $Q.objetos.agregar(E)$ \Comment{Se queda en el padre si no cabe en hijos}
+\EndIf
+
+\State \Return Verdadero
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+\caption{Consulta de Rango (Query)}
+\begin{algorithmic}[1]
+\Require Nodo $Q$, Rectángulo $Rango$
+\Ensure Lista de objetos $L$ encontrados
+\If{$Q.limites$ no intersecta con $Rango$}
+    \State \Return \Comment{Poda del árbol: no buscamos aquí}
+\EndIf
+
+\For{cada $Objeto$ en $Q.objetos$}
+    \If{$Objeto.rect$ intersecta con $Rango$}
+        \State $L.agregar(Objeto)$
+    \EndIf
+\EndFor
+
+\If{$Q.subdividido$}
+    \For{cada $Hijo$ en $Q.hijos$}
+        \State $L.concatenar(Consultar(Hijo, Rango))$
+    \EndFor
+\EndIf
+
+\State \Return $L$
+\end{algorithmic}
+\end{algorithm}
+
+\newpage
+\section{Propuesta del Videojuego: ``Cellular Defense''}
+
+\subsection{Concepto y Funcionalidades Principales}
+El videojuego propuesto es un \textit{shooter} de supervivencia 2D ambientado en un entorno microscópico.
+\begin{itemize}
+    \item \textbf{Jugador:} Controla un Glóbulo Blanco con movimiento libre (teclas WASD) y disparo direccional (Mouse).
+    \item \textbf{Enemigos:} Virus y Bacterias generados proceduralmente en los bordes de la pantalla. Se mueven hacia el centro o persiguen al jugador.
+    \item \textbf{Mecánica de Enjambre:} Se buscará tener más de 200 enemigos en pantalla simultáneamente para justificar el uso de estructuras de datos avanzadas.
+    \item \textbf{Sistema de HUD:} Mostrará FPS y el contador de colisiones en tiempo real.
+\end{itemize}
+
+\subsection{Aplicación del Quadtree en Colisiones}
+El Quadtree será el motor físico del juego. En cada frame (bucle de juego):
+
+\begin{enumerate}
+    \item \textbf{Limpieza:} Se ejecuta el método \texttt{Clear()} para vaciar el árbol del frame anterior.
+    \item \textbf{Inserción:} Todas las entidades vivas (Jugador, Enemigos, Proyectiles) se insertan en el Quadtree usando \texttt{Insert()}. Esto organiza espacialmente a los actores.
+    \item \textbf{Detección (Fase Broad-Phase):}
+    \begin{itemize}
+        \item Para cada \textbf{Proyectil}: Se invoca \texttt{Query()} usando su área. Esto retorna una lista pequeña de enemigos cercanos (ej. 2 o 3) en lugar de los 200 existentes.
+        \item Para el \textbf{Jugador}: Se invoca \texttt{Query()} para ver si algún enemigo lo ha tocado.
+    \end{itemize}
+    \item \textbf{Resolución (Fase Narrow-Phase):} Se verifica la colisión precisa solo con los objetos retornados por el Quadtree.
+\end{enumerate}
+
+\subsection{Benchmarking Interactivo}
+Como valor agregado, el juego incluirá un modo de depuración activable con una tecla (ej. 'B'). Este modo desactivará el Quadtree y usará fuerza bruta, mostrando en pantalla la caída de FPS y el aumento exponencial de comparaciones, sirviendo como demostración empírica de la eficiencia del algoritmo.
+
+\end{document}
