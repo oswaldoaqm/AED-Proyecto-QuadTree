@@ -35,6 +35,9 @@ set(SOURCE_FILES
         codigo/include/Projectile.h
         codigo/src/Projectile.cpp
         codigo/include/Particle.h
+        codigo/include/PowerUp.h
+        codigo/src/PowerUp.cpp
+        codigo/include/FloatingText.h
 )
 
 # =========================================================

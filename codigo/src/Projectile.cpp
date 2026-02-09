@@ -2,22 +2,19 @@
 #include <cmath>
 
 Projectile::Projectile(int id, float x, float y, float dirX, float dirY)
-    : Entity(id, PROJECTILE, x, y, 12.0f, 12.0f) {
+    : Entity(id, PROJECTILE, x, y, 12.0f, 12.0f, 1) {
 
-    speed = 750.0f; // Más rápido para cruzar 1920 píxeles rápido
+    speed = 750.0f;
 
-    float length = std::sqrt(dirX*dirX + dirY*dirY);
-    if (length != 0) {
+    float length = std::sqrt(dirX * dirX + dirY * dirY);
+    if (length > 0.0001f) {
         dirX /= length;
         dirY /= length;
+    } else {
+        dirX = 1.0f;
+        dirY = 0.0f;
     }
 
-    // Almacenamos velocidad para update
-    // Nota: Como no tenemos miembros de velocidad en Entity,
-    // podrías agregarlos o calcularlos aquí.
-    // Usaremos un truco simple guardándolos en variables locales
-    // o calculándolos cada vez (menos eficiente) o añadiendo campos.
-    // Asumiremos que Projectile tiene campos privados vx, vy.
     vx = dirX * speed;
     vy = dirY * speed;
 
@@ -28,17 +25,22 @@ Projectile::Projectile(int id, float x, float y, float dirX, float dirY)
 }
 
 void Projectile::update(float deltaTime) {
+    if (!active) return;
+
     bounds.x += vx * deltaTime;
     bounds.y += vy * deltaTime;
 
     shape.setPosition(bounds.x, bounds.y);
 
-    // LÍMITES DE DESACTIVACIÓN PARA 1920 x 1080
-    if (bounds.x < -100 || bounds.x > 2020 || bounds.y < -100 || bounds.y > 1180) {
+    const float margin = 50.0f;
+    if (bounds.x < -margin || bounds.x > 1920 + margin ||
+        bounds.y < -margin || bounds.y > 1080 + margin) {
         active = false;
-    }
+        }
 }
 
 void Projectile::render(sf::RenderWindow& window) {
-    window.draw(shape);
+    if (active) {
+        window.draw(shape);
+    }
 }

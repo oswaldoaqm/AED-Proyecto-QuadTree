@@ -8,7 +8,8 @@ enum EntityType {
     PLAYER,
     PROJECTILE,
     ENEMY,
-    BOSS
+    BOSS,
+    POWERUP
 };
 
 class Entity {
@@ -18,9 +19,10 @@ public:
     AABB bounds;
     bool active;
     int health;
+    int maxHealth;
 
     Entity(int _id, EntityType _type, float x, float y, float width, float height, int hp = 1)
-        : id(_id), type(_type), active(true), health(hp) {
+        : id(_id), type(_type), active(true), health(hp), maxHealth(hp) {
         bounds = AABB(x, y, width / 2.0f, height / 2.0f);
     }
 

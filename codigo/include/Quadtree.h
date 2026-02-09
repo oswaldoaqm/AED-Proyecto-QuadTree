@@ -8,7 +8,7 @@
 class Quadtree {
 private:
     static const int CAPACITY = 4;
-    static const int MAX_DEPTH = 8; // Podría ser modificado más adelante**
+    static const int MAX_DEPTH = 8;
 
     AABB boundary;
     SimpleList<Entity*> objects;

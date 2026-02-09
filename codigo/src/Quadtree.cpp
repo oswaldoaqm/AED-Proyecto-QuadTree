@@ -1,5 +1,4 @@
 #include "../include/Quadtree.h"
-#include <iostream>
 
 Quadtree::Quadtree(AABB bounds, int lvl) {
     boundary = bounds;
@@ -48,12 +47,14 @@ int Quadtree::getIndex(const AABB& itemBounds) {
 
     bool topQuadrant = (itemBounds.y + itemBounds.halfH < horizontalMidpoint);
     bool bottomQuadrant = (itemBounds.y - itemBounds.halfH > horizontalMidpoint);
+    bool leftQuadrant = (itemBounds.x + itemBounds.halfW < verticalMidpoint);
+    bool rightQuadrant = (itemBounds.x - itemBounds.halfW > verticalMidpoint);
 
-    if (itemBounds.x + itemBounds.halfW < verticalMidpoint) {
+    if (leftQuadrant) {
         if (topQuadrant) index = 0;
         else if (bottomQuadrant) index = 2;
     }
-    else if (itemBounds.x - itemBounds.halfW > verticalMidpoint) {
+    else if (rightQuadrant) {
         if (topQuadrant) index = 1;
         else if (bottomQuadrant) index = 3;
     }
@@ -74,14 +75,16 @@ bool Quadtree::insert(Entity* entity) {
     if (objects.size() > CAPACITY && level < MAX_DEPTH) {
         if (!divided) subdivide();
 
-        SimpleList<Entity*> keepObjects;
-        for (auto& obj : objects) {
-            int index = getIndex(obj->bounds);
-            if (index != -1) children[index]->insert(obj);
-            else keepObjects.push_back(obj);
-        }
-        objects.clear();
-        for (auto& kept : keepObjects) objects.push_back(kept);
+        SimpleList<Entity*> movedObjects;
+
+        objects.remove_if([&](Entity* obj) {
+            int idx = getIndex(obj->bounds);
+            if (idx != -1) {
+                children[idx]->insert(obj);
+                return true;
+            }
+            return false;
+        });
     }
     return true;
 }
@@ -96,30 +99,32 @@ void Quadtree::query(AABB range, SimpleList<Entity*>& found) {
     }
 
     if (divided) {
-        for (int i = 0; i < 4; i++) children[i]->query(range, found);
+        for (int i = 0; i < 4; i++) {
+            children[i]->query(range, found);
+        }
     }
 }
 
-// IMPLEMENTACIÓN VISUAL
 void Quadtree::debugRender(sf::RenderWindow& window) {
     sf::RectangleShape rect;
-    // Tamaño completo (halfW * 2)
+
     rect.setSize(sf::Vector2f(boundary.halfW * 2.0f, boundary.halfH * 2.0f));
-    // Origen en la esquina superior izquierda (SFML usa top-left, AABB usa centro)
+
     rect.setPosition(boundary.x - boundary.halfW, boundary.y - boundary.halfH);
 
-    rect.setFillColor(sf::Color::Transparent); // Sin relleno
+    rect.setFillColor(sf::Color::Transparent);
 
-    // Color de borde gris tenue para no distraer
-    rect.setOutlineColor(sf::Color(80, 80, 80));
-    rect.setOutlineThickness(1.0f);
+    sf::Uint8 colorIntensity = std::min(255, 50 + (level * 25));
+    rect.setOutlineColor(sf::Color(0, colorIntensity, 255, 150));
+    rect.setOutlineThickness(1.0f / (level + 1));
 
     window.draw(rect);
 
-    // Recursividad para dibujar hijos
     if (divided) {
         for (int i = 0; i < 4; i++) {
-            children[i]->debugRender(window);
+            if (children[i]) {
+                children[i]->debugRender(window);
+            }
         }
     }
 }

@@ -2,12 +2,8 @@
 #define AED_PROYECTO_QUADTREE_DATASTRUCTURES_H
 
 #include <cmath>
-#include <cstddef>
-#include <functional> // Necesario para usar lambdas en remove_if
+#include <functional>
 
-// =========================================================
-// 1. Estructura AABB (Sin cambios)
-// =========================================================
 struct AABB {
     float x, y, halfW, halfH;
     AABB() : x(0), y(0), halfW(0), halfH(0) {}
@@ -28,9 +24,6 @@ struct AABB {
     }
 };
 
-// =========================================================
-// 2. SimpleList (Con remove_if)
-// =========================================================
 template <typename T>
 class SimpleList {
 private:
@@ -76,22 +69,19 @@ public:
         count = 0;
     }
 
-    // NUEVO: Elimina nodos que cumplan una condición (Predicado)
-    // Útil para borrar enemigos muertos o balas fuera de pantalla.
     void remove_if(std::function<bool(T&)> predicate) {
         Node* current = head;
         while (current) {
             Node* nextNode = current->next;
 
             if (predicate(current->data)) {
-                // Si cumple la condición, lo sacamos de la lista
                 if (current->prev) current->prev->next = current->next;
                 if (current->next) current->next->prev = current->prev;
 
                 if (current == head) head = current->next;
                 if (current == tail) tail = current->prev;
 
-                delete current; // Borramos el NODO (no necesariamente el dato T si es puntero)
+                delete current;
                 count--;
             }
             current = nextNode;

@@ -3,6 +3,12 @@
 
 #include "Entity.h"
 
+enum EnemyVariant {
+    NORMAL,
+    KAMIKAZE,
+    TANK
+};
+
 class Enemy : public Entity {
 private:
     sf::RectangleShape shape;
@@ -11,13 +17,14 @@ private:
 
 public:
     int generation;
+    EnemyVariant variant;
 
-    Enemy(int id, float startX, float startY, float targetX, float targetY, int gen = 0, bool isBoss = false);
-
-    void update(float deltaTime) override;
-    void render(sf::RenderWindow& window) override;
+    Enemy(int id, float x, float y, float tx, float ty, int gen = 0, bool isBoss = false, EnemyVariant var = NORMAL);
 
     void setTarget(float x, float y);
+    void update(float deltaTime) override;
+    void render(sf::RenderWindow& window) override;
 };
+
 
 #endif
