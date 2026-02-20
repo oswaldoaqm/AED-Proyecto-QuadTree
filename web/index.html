@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cellular Defense – QuadTree Game</title>
+    <meta name="description" content="Videojuego de colisiones optimizado con QuadTree. Defiéndete de las bacterias en este top-down shooter." />
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="game-wrapper">
+        <canvas id="gameCanvas" tabindex="0"></canvas>
+
+        <div id="controls-bar">
+            <span class="key-hint"><kbd>WASD</kbd> Mover</span>
+            <span class="key-hint"><kbd>Click</kbd> Disparar</span>
+            <span class="key-hint"><kbd>P</kbd> Bot</span>
+            <span class="key-hint"><kbd>B</kbd> Debug QuadTree</span>
+            <span class="key-hint"><kbd>SPACE</kbd> Toggle QuadTree</span>
+            <span class="key-hint"><kbd>K</kbd> Spawn 50 Kamikazes</span>
+            <span class="key-hint"><kbd>R</kbd> Reiniciar (Game Over)</span>
+        </div>
+    </div>
+
+    <!-- Orden de carga importante: quadtree → entities → bot → game -->
+    <script src="quadtree.js"></script>
+    <script src="entities.js"></script>
+    <script src="bot.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

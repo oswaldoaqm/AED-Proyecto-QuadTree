@@ -1,0 +1,87 @@
+/* ============================================================
+   style.css – Estilos para Cellular Defense Web
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;700;900&display=swap');
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    width: 100%;
+    height: 100%;
+    background: #0a0005;
+    overflow: hidden;
+    font-family: 'Exo 2', 'Segoe UI', sans-serif;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at center, #1a0008 0%, #08000e 70%, #000000 100%);
+}
+
+/* ---- Wrapper y canvas ---- */
+#game-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+#gameCanvas {
+    display: block;
+    /* El canvas tiene resolución 1920×1080; lo escalamos al viewport */
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    cursor: crosshair;
+    border: none;
+    outline: none;
+    /* Glow sutil alrededor del canvas */
+    box-shadow:
+        0 0 40px rgba(0, 200, 255, 0.08),
+        0 0 100px rgba(180, 0, 60, 0.06);
+}
+
+/* ---- Barra superior de controles ---- */
+#controls-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 16px;
+    pointer-events: none;
+    opacity: 0.55;
+}
+
+.key-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #aaa;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+}
+
+.key-hint kbd {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #fff;
+}
+
+/* ---- Scrollbar oculta ---- */
+::-webkit-scrollbar { display: none; }
